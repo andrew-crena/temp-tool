@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>F → C Converter</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 40px; }
+    input, button { font-size: 18px; padding: 10px; margin: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>Fahrenheit → Celsius</h2>
+
+<input id="f" type="number" placeholder="Enter °F">
+<br>
+<button onclick="convert()">Convert</button>
+
+<h3 id="result"></h3>
+
+<script>
+function convert() {
+  const f = parseFloat(document.getElementById("f").value);
+  if (isNaN(f)) return;
+
+  const c = (f - 32) * 5 / 9;
+  document.getElementById("result").innerText =
+    `${f}°F = ${c.toFixed(2)}°C`;
+}
+</script>
+
+</body>
+</html>
