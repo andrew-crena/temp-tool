@@ -1,103 +1,46 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>F → C</title>
-
-  <!-- Makes it feel like an app on mobile -->
-  <meta name="viewport" content="widt<!DOCTYPE html>
-<html lang="en">
-<head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Temp</title>
 
 <style>
-  :root {
-    --bg: #0b0b0c;
-    --card: #121214;
-    --text: #f5f5f7;
-    --muted: #9aa0a6;
-    --accent: #4da3ff;
-  }
-
-  * { box-sizing: border-box; }
-
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-    background: radial-gradient(1200px 800px at 50% -10%, #1a1a1d, var(--bg));
-    color: var(--text);
     height: 100vh;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #111;
+    transition: background 0.4s ease;
   }
 
   .wrap {
     width: 100%;
-    max-width: 420px;
-    padding: 24px 16px 28px;
+    max-width: 400px;
+    text-align: center;
   }
 
-  .card {
-    background: linear-gradient(180deg, #141417, #0f0f12);
-    border-radius: 20px;
-    padding: 18px 16px 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.03);
-  }
-
-  .row {
-    display: grid;
-    gap: 6px;
-    margin: 10px 0 18px;
-  }
-
-  .label {
-    font-size: 13px;
-    letter-spacing: .04em;
-    color: var(--muted);
+  .temp {
+    margin: 25px 0;
   }
 
   input {
     width: 100%;
-    font-size: 56px;
-    line-height: 1.1;
-    padding: 10px 12px;
-    border-radius: 14px;
+    font-size: 64px;
+    text-align: center;
     border: none;
     outline: none;
-    text-align: center;
-    color: var(--text);
-    background: var(--card);
-    transition: background .15s ease, transform .04s ease;
-  }
-
-  input:focus {
-    background: #17171b;
-    box-shadow: 0 0 0 2px rgba(77,163,255,.15);
+    background: transparent;
+    color: white;
   }
 
   .unit {
     font-size: 18px;
-    margin-left: 6px;
-    opacity: .7;
-  }
-
-  .hint {
+    opacity: 0.5;
     margin-top: 6px;
-    font-size: 12px;
-    color: var(--muted);
-    text-align: center;
-    opacity: .8;
-  }
-
-  .flash {
-    animation: flash .18s ease;
-  }
-
-  @keyframes flash {
-    from { transform: scale(0.995); }
-    to   { transform: scale(1); }
   }
 </style>
 </head>
@@ -105,201 +48,89 @@
 <body>
 
 <div class="wrap">
-  <div class="card" id="card">
 
-    <div class="row">
-      <div class="label">FAHRENHEIT</div>
-      <div>
-        <input id="f" type="number" inputmode="decimal" placeholder="—">
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="label">CELSIUS</div>
-      <div>
-        <input id="c" type="number" inputmode="decimal" placeholder="—">
-      </div>
-    </div>
-
-    <div class="hint">Type in either field • Swipe down to clear</div>
+  <div class="temp">
+    <input id="f" type="number" inputmode="decimal" placeholder="—">
+    <div class="unit">°F</div>
   </div>
+
+  <div class="temp">
+    <input id="c" type="number" inputmode="decimal" placeholder="—">
+    <div class="unit">°C</div>
+  </div>
+
 </div>
 
 <script>
-const fInput = document.getElementById("f");
-const cInput = document.getElementById("c");
-const card = document.getElementById("card");
+const f = document.getElementById("f");
+const c = document.getElementById("c");
 
-let active = "f"; // default
+let active = "f";
 
-// --- formatting ---
-const fmt = (n) => {
-  const s = Number(n.toFixed(2)).toString();
-  return s;
-};
+// formatting
+const fmt = n => Number(n.toFixed(2)).toString();
 
-// --- persistence ---
-const save = (f, c, mode) => {
-  localStorage.setItem("temp_state", JSON.stringify({ f, c, mode }));
-};
+// color mapping (improved, smoother)
+function setColor(tempC) {
+  if (isNaN(tempC)) return;
 
-const load = () => {
-  try {
-    const s = JSON.parse(localStorage.getItem("temp_state"));
-    if (!s) return;
-    if (s.f !== "") fInput.value = s.f;
-    if (s.c !== "") cInput.value = s.c;
-    if (s.mode) active = s.mode;
-  } catch {}
-};
+  const t = Math.max(0, Math.min(1, (tempC + 10) / 50));
 
-// --- conversion ---
+  const hue = (1 - t) * 220; // blue → red
+  document.body.style.background = `hsl(${hue}, 70%, 40%)`;
+}
+
+// conversions
 function fromF() {
-  const f = parseFloat(fInput.value);
-  if (isNaN(f)) { cInput.value = ""; return; }
-  const c = (f - 32) * 5 / 9;
-  cInput.value = fmt(c);
-  save(fInput.value, cInput.value, "f");
-  feedback();
+  const val = parseFloat(f.value);
+  if (isNaN(val)) { c.value = ""; return; }
+
+  const out = (val - 32) * 5/9;
+  c.value = fmt(out);
+  setColor(out);
 }
 
 function fromC() {
-  const c = parseFloat(cInput.value);
-  if (isNaN(c)) { fInput.value = ""; return; }
-  const f = (c * 9 / 5) + 32;
-  fInput.value = fmt(f);
-  save(fInput.value, cInput.value, "c");
-  feedback();
+  const val = parseFloat(c.value);
+  if (isNaN(val)) { f.value = ""; return; }
+
+  const out = val * 9/5 + 32;
+  f.value = fmt(out);
+  setColor(val);
 }
 
-// --- feedback ---
-function feedback() {
-  card.classList.remove("flash");
-  void card.offsetWidth;
-  card.classList.add("flash");
+// events
+f.addEventListener("focus", () => { active = "f"; f.select(); });
+c.addEventListener("focus", () => { active = "c"; c.select(); });
 
-  if (navigator.vibrate) {
-    navigator.vibrate(5);
-  }
-}
+f.addEventListener("input", () => active === "f" && fromF());
+c.addEventListener("input", () => active === "c" && fromC());
 
-// --- event wiring ---
-fInput.addEventListener("focus", () => {
-  active = "f";
-  fInput.select();
-});
-
-cInput.addEventListener("focus", () => {
-  active = "c";
-  cInput.select();
-});
-
-fInput.addEventListener("input", () => {
-  if (active === "f") fromF();
-});
-
-cInput.addEventListener("input", () => {
-  if (active === "c") fromC();
-});
-
-// --- clear gesture (swipe down) ---
+// swipe down to clear
 let startY = null;
 
-document.addEventListener("touchstart", (e) => {
+document.addEventListener("touchstart", e => {
   startY = e.touches[0].clientY;
 });
 
-document.addEventListener("touchend", (e) => {
-  if (startY === null) return;
-  const endY = e.changedTouches[0].clientY;
-  if (endY - startY > 120) {
-    fInput.value = "";
-    cInput.value = "";
-    localStorage.removeItem("temp_state");
-    feedback();
+document.addEventListener("touchend", e => {
+  if (!startY) return;
+
+  const dy = e.changedTouches[0].clientY - startY;
+
+  if (dy > 120) {
+    f.value = "";
+    c.value = "";
+    document.body.style.background = "#111";
   }
+
   startY = null;
 });
 
-// --- initial load ---
+// init
 window.onload = () => {
-  load();
-
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("mode") === "c") active = "c";
-
-  if (active === "c") {
-    cInput.focus();
-  } else {
-    fInput.focus();
-  }
+  f.focus();
 };
-</script>
-
-</body>
-</html>h=device-width, initial-scale=1.0">
-
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 40px 20px;
-      background: #111;
-      color: white;
-    }
-
-    input {
-      width: 80%;
-      max-width: 300px;
-      font-size: 40px;
-      padding: 12px;
-      text-align: center;
-      border-radius: 12px;
-      border: none;
-      outline: none;
-    }
-
-    #result {
-      margin-top: 30px;
-      font-size: 28px;
-      opacity: 0.9;
-    }
-  </style>
-</head>
-
-<body>
-
-<input 
-  id="f" 
-  type="number" 
-  placeholder="°F"
-  inputmode="decimal"
-/>
-
-<div id="result">—</div>
-
-<script>
-const input = document.getElementById("f");
-const result = document.getElementById("result");
-
-// AUTO-FOCUS on load (critical for NFC flow)
-window.onload = () => {
-  input.focus();
-};
-
-// LIVE conversion (no button)
-input.addEventListener("input", () => {
-  const f = parseFloat(input.value);
-
-  if (isNaN(f)) {
-    result.innerText = "—";
-    return;
-  }
-
-  const c = (f - 32) * 5 / 9;
-  result.innerText = `${c.toFixed(2)} °C`;
-});
 </script>
 
 </body>
