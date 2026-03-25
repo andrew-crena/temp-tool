@@ -3,133 +3,154 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Temp</title>
+<title>Temperature Converter</title>
 
 <style>
   body {
     margin: 0;
-    height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     background: #111;
-    transition: background 0.4s ease;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
   }
 
-  .wrap {
-    width: 100%;
-    max-width: 400px;
+  .container {
+    width: 90%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .box {
+    background: #1a1a1a;
+    border-radius: 14px;
+    padding: 16px;
     text-align: center;
   }
 
-  .temp {
-    margin: 25px 0;
+  .label {
+    font-size: 13px;
+    margin-bottom: 6px;
+    opacity: 0.7;
   }
 
   input {
     width: 100%;
-    font-size: 64px;
-    text-align: center;
+    font-size: 32px;
+    padding: 10px;
+    border-radius: 10px;
     border: none;
     outline: none;
-    background: transparent;
-    color: white;
+    text-align: center;
   }
 
-  .unit {
-    font-size: 18px;
-    opacity: 0.5;
-    margin-top: 6px;
+  .result {
+    font-size: 26px;
+    font-weight: 500;
+  }
+
+  .small {
+    font-size: 14px;
+    opacity: 0.8;
   }
 </style>
 </head>
 
 <body>
 
-<div class="wrap">
+<div class="container">
 
-  <div class="temp">
-    <input id="f" type="number" inputmode="decimal" placeholder="—">
-    <div class="unit">°F</div>
+  <!-- LOCAL TEMPERATURE -->
+  <div class="box">
+    <div class="label">Stanford (Current)</div>
+    <div id="localTemp" class="small">Loading…</div>
   </div>
 
-  <div class="temp">
-    <input id="c" type="number" inputmode="decimal" placeholder="—">
-    <div class="unit">°C</div>
+  <!-- Fahrenheit → Celsius -->
+  <div class="box">
+    <div class="label">Fahrenheit → Celsius</div>
+    <input id="fInput" type="number" placeholder="Enter °F">
+  </div>
+
+  <!-- Celsius → Fahrenheit -->
+  <div class="box">
+    <div class="label">Celsius → Fahrenheit</div>
+    <input id="cInput" type="number" placeholder="Enter °C">
+  </div>
+
+  <!-- Result -->
+  <div class="box">
+    <div class="label">Converted Temperature</div>
+    <div id="result" class="result">—</div>
   </div>
 
 </div>
 
 <script>
-const f = document.getElementById("f");
-const c = document.getElementById("c");
+const fInput = document.getElementById("fInput");
+const cInput = document.getElementById("cInput");
+const result = document.getElementById("result");
+const localTemp = document.getElementById("localTemp");
 
-let active = "f";
+// --- conversion logic ---
 
-// formatting
-const fmt = n => Number(n.toFixed(2)).toString();
+fInput.addEventListener("input", () => {
+  const f = parseFloat(fInput.value);
 
-// color mapping (improved, smoother)
-function setColor(tempC) {
-  if (isNaN(tempC)) return;
-
-  const t = Math.max(0, Math.min(1, (tempC + 10) / 50));
-
-  const hue = (1 - t) * 220; // blue → red
-  document.body.style.background = `hsl(${hue}, 70%, 40%)`;
-}
-
-// conversions
-function fromF() {
-  const val = parseFloat(f.value);
-  if (isNaN(val)) { c.value = ""; return; }
-
-  const out = (val - 32) * 5/9;
-  c.value = fmt(out);
-  setColor(out);
-}
-
-function fromC() {
-  const val = parseFloat(c.value);
-  if (isNaN(val)) { f.value = ""; return; }
-
-  const out = val * 9/5 + 32;
-  f.value = fmt(out);
-  setColor(val);
-}
-
-// events
-f.addEventListener("focus", () => { active = "f"; f.select(); });
-c.addEventListener("focus", () => { active = "c"; c.select(); });
-
-f.addEventListener("input", () => active === "f" && fromF());
-c.addEventListener("input", () => active === "c" && fromC());
-
-// swipe down to clear
-let startY = null;
-
-document.addEventListener("touchstart", e => {
-  startY = e.touches[0].clientY;
-});
-
-document.addEventListener("touchend", e => {
-  if (!startY) return;
-
-  const dy = e.changedTouches[0].clientY - startY;
-
-  if (dy > 120) {
-    f.value = "";
-    c.value = "";
-    document.body.style.background = "#111";
+  if (isNaN(f)) {
+    result.innerText = "—";
+    return;
   }
 
-  startY = null;
+  const c = (f - 32) * 5 / 9;
+  result.innerText = `${f}°F = ${c.toFixed(2)}°C`;
+
+  cInput.value = "";
 });
 
-// init
+cInput.addEventListener("input", () => {
+  const c = parseFloat(cInput.value);
+
+  if (isNaN(c)) {
+    result.innerText = "—";
+    return;
+  }
+
+  const f = (c * 9 / 5) + 32;
+  result.innerText = `${c}°C = ${f.toFixed(2)}°F`;
+
+  fInput.value = "";
+});
+
+// --- LOCAL TEMPERATURE (Stanford coordinates) ---
+
+function loadStanfordTemp() {
+  const lat = 37.4275;
+  const lon = -122.1697;
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`;
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      const c = data.current_weather.temperature;
+      const f = (c * 9 / 5) + 32;
+
+      localTemp.innerText = `${f.toFixed(1)}°F / ${c.toFixed(1)}°C`;
+    })
+    .catch(() => {
+      localTemp.innerText = "Unavailable";
+    });
+}
+
+// --- init ---
 window.onload = () => {
-  f.focus();
+  fInput.focus();
+  loadStanfordTemp();
 };
 </script>
 
